@@ -32,7 +32,6 @@ PikaReplServer::~PikaReplServer() {
 }
 
 int PikaReplServer::Start() {
-  return pink::kSuccess;
   int res = pika_repl_server_thread_->StartThread();
   if (res != pink::kSuccess) {
     LOG(FATAL) << "Start Pika Repl Server Thread Error: " << res
@@ -47,7 +46,6 @@ int PikaReplServer::Start() {
 }
 
 int PikaReplServer::Stop() {
-  return 0;
   server_tp_->stop_thread_pool();
   pika_repl_server_thread_->StopThread();
   return 0;
@@ -155,7 +153,6 @@ slash::Status PikaReplServer::Write(const std::string& ip,
   if (conn == nullptr) {
     return Status::NotFound("The" + ip_port + " conn cannot be found");
   }
-  ROCKSDB_DIE("Should no goes here, replication is not supported by topling");
   if (conn->WriteResp(std::string(msg))) {
     conn->NotifyClose();
     return Status::Corruption("The" + ip_port + " conn, Write Resp Failed");

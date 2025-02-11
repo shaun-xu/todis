@@ -1,7 +1,7 @@
 # Todis [ [English](README.md) ]
 
 ## 0. 开源社区版
-现在（2021-11-14）用户可以自己编译社区版 Todis，社区版 Todis 拥有完整的功能，但是缺少性能套件（Topling SST, MemTab, 分布式 Compact），即便如此，Todis 的性能仍然比市场上现有的竞品更加优越。
+用户可以自己编译社区版 Todis，社区版 Todis 拥有完整的功能，企业版额外有 ToplingZipTable 压缩的 SST。
 
 **开源社区版不允许字节跳动（bytedance）使用，参见 [LICENSE](LICENSE)**。
 ## 1. 简介
@@ -18,11 +18,11 @@ Todis 的 Redis 服务层 fork 自开源的 pika，存储引擎层基于 [Toplin
 ## 2. 功能
 1. 存储计算分离，计算和存储可单独弹性伸缩
 2. 一键扩容，无需分片
-3. 完备、丰富的监控指标
-4. 可视化 Web 数据观测
+3. 完备、丰富的监控指标（[demo](http://todis-demo.aliyun.db.topling.cn:3000)）
+4. 可视化 Web 数据观测（[demo](http://todis-demo.aliyun.db.topling.cn:8000)）
 
 ## 3. 性能
-1. 利用弹性分布式 Compact，彻底消除写卡顿（Write Stall）
+1. 利用弹性分布式 Compact，彻底消除写卡顿（Write Stall）[观测 demo](http://todis-demo.aliyun.db.topling.cn:8000/compaction_executor_factory/dcompact?html=1&cols=3&refresh=1)
 2. 利用可检索内存压缩技术大幅提高读性能：CPU消耗降低，内存利用率、缓存命中率提高
 3. 利用共享存储实现毫秒级主从同步，可在 10 秒内拉起新结点
 
@@ -31,7 +31,7 @@ Todis 的 Redis 服务层 fork 自开源的 pika，存储引擎层基于 [Toplin
 Redis 协议虽然非常简单，但是正确、完整地实现一遍，其实并不容易，在众多基于 RocksDB 的 Redis 实现中，我们经过仔细调研，反复尝试，最终选择了 pika。选定之后，对其进行了大规模的深度修改：
 
 1. 重写了性能关键代码
-2. 增加了一系列监控指标（各命令的延时直方图、数据大小分布直方图）
+2. 增加了一系列[监控指标](http://todis-demo.aliyun.db.topling.cn:3000)（各命令的延时直方图、数据大小分布直方图）
 3. 适配 [ToplingDB](https://github.com/topling/toplingdb) 的 [SidePlugin](https://github.com/topling/rockside/wiki)，Web 展示各种配置，数据概要，状态信息等
 4. 适配 [ToplingDB](https://github.com/topling/toplingdb) 的 [分布式 Compact](https://github.com/topling/rockside/wiki/Distributed-Compaction)，为此重新设计了 Key 编码格式，去掉了自定义 Comparator，等等
 
@@ -47,7 +47,7 @@ Redis 协议虽然非常简单，但是正确、完整地实现一遍，其实�
    * 字节跳动在 2020 年底开源了 [terark-zip](https://github.com/bytedance/terark-zip)
    * 作为 **terark-zip** 的作者，rockeet 为他的 [topling-zip](https://github.com/topling/topling-zip)(fork 自 [terark-zip](https://github.com/bytedance/terark-zip)) 增加了很多改进
 3. 多租户、多实例共享计算结点的[弹性分布式 Compact](https://github.com/topling/rockside/wiki/Distributed-Compaction)
-## 5. Compile
+## 5. 编译
 ### 5.1. CentOS
 ```bash
 sudo yum install epel-release -y
@@ -58,6 +58,7 @@ cd todis
 git submodule update --init --recursive
 make -j`nproc`
 ```
+如果你的 protobuf-devel 版本太老，编译可能会失败，请更新版本之后重新编译。
 ## 6. 部署 & 运行
 编译输出目录 output 包含了所有运行时的需要，用户需要修改配置文件（特别是配置文件中数据的存储目录），配置文件有两个：
 `todis-community.conf` 和 `todis-community.json`，前者是 pika 的配置文件，后者是 todis 的 ToplingDB SidePlugin 配置文件，`todis-community.conf` 中 `sideplugin-conf` 用来指定 `todis-community.json` 的路径。

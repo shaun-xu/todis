@@ -101,12 +101,8 @@ PikaServer::PikaServer() :
   pika_dispatch_thread_ = new PikaDispatchThread(ips, port_, worker_num_, 3000,
                                                  worker_queue_limit, g_pika_conf->max_conn_rbuf_size());
   pika_monitor_thread_ = new PikaMonitorThread();
-#if 1
-  pika_rsync_service_ = nullptr;
-#else
   pika_rsync_service_ = new PikaRsyncService(g_pika_conf->db_sync_path(),
                                              g_pika_conf->port() + kPortShiftRSync);
-#endif
   pika_pubsub_thread_ = new pink::PubSubThread();
   pika_auxiliary_thread_ = new PikaAuxiliaryThread(); // g_pika_rm, replication
 
@@ -231,10 +227,8 @@ bool PikaServer::ServerInit() {
 
 void PikaServer::Start() {
   // start rsync first, rocksdb opened fd will not appear in this fork
-/*
   TERARK_VERIFY_F(0 == pika_rsync_service_->StartRsync(),
                  "listen port = %d : %m", pika_rsync_service_->ListenPort());
-*/
 
   // We Init Table Struct Before Start The following thread
   InitTableStruct();
@@ -690,7 +684,6 @@ const std::shared_ptr<Partition>& PikaServer::GetPartitionByDbName(const std::st
 const std::shared_ptr<Partition>& PikaServer::GetTablePartitionById(
                                     const std::string& table_name,
                                     uint32_t partition_id) {
-  ROCKSDB_DIE("Should not goes here");
   const std::shared_ptr<Table>& table = GetTable(table_name);
   return table ? table->GetPartitionById(partition_id) : g_partition_null;
 }
@@ -698,7 +691,6 @@ const std::shared_ptr<Partition>& PikaServer::GetTablePartitionById(
 const std::shared_ptr<Partition>& PikaServer::GetTablePartitionByKey(
                                     const std::string& table_name,
                                     const std::string& key) {
-  ROCKSDB_DIE("Should not goes here");
   const std::shared_ptr<Table>& table = GetTable(table_name);
   return table ? table->GetPartitionByKey(key) : g_partition_null;
 }
@@ -727,7 +719,6 @@ Status PikaServer::DoSameThingEveryPartition(const TaskType& type) {
           }
         case TaskType::kPurgeLog:
          {
-           /*
             std::shared_ptr<SyncMasterPartition> partition =
               g_pika_rm->GetSyncMasterPartitionByName(
                   PartitionInfo(table_item.second->GetTableName(),
@@ -738,7 +729,6 @@ Status PikaServer::DoSameThingEveryPartition(const TaskType& type) {
               break;
             }
             partition->StableLogger()->PurgeStableLogs();
-            */
             break;
           }
         case TaskType::kCompactAll:
@@ -1076,7 +1066,7 @@ void PikaServer::TryDBSync(const std::string& ip, int port,
   std::shared_ptr<Partition> partition =
     GetTablePartitionById(table_name, partition_id);
   if (!partition) {
-    LOG(WARNING) << "Partition: " << partition->GetPartitionName()
+    LOG(WARNING) << "Partition: " << partition_id
       << " Not Found, TryDBSync Failed";
     return;
   }
@@ -1103,7 +1093,7 @@ void PikaServer::DbSyncSendFile(const std::string& ip, int port,
                                 uint32_t partition_id) {
   std::shared_ptr<Partition> partition = GetTablePartitionById(table_name, partition_id);
   if (!partition) {
-    LOG(WARNING) << "Partition: " << partition->GetPartitionName()
+    LOG(WARNING) << "Partition: " << partition_id
       << " Not Found, DbSync send file Failed";
     return;
   }
@@ -1628,7 +1618,6 @@ void PikaServer::AutoDeleteExpiredDump() {
 }
 
 void PikaServer::AutoKeepAliveRSync() {
-  return;
   if (!pika_rsync_service_->CheckRsyncAlive()) {
     LOG(WARNING) << "The Rsync service is down, Try to restart";
     pika_rsync_service_->StartRsync();
